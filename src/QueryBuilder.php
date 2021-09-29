@@ -662,10 +662,10 @@ class QueryBuilder extends Builder
 
     /**
      * Get statistics of errors of the tree.
-     * 
+     *
      * @since 2.0
-     * 
-     * @param null|Callable $callback
+     *
+     * @param null|Closure $callback
      *
      * @return array
      */
@@ -697,8 +697,8 @@ class QueryBuilder extends Builder
     }
 
     /**
-     * @param null|Callable $callback
-     * 
+     * @param null|Closure $callback
+     *
      * @return BaseQueryBuilder
      */
     protected function getOdnessQuery($callback = null)
@@ -716,8 +716,8 @@ class QueryBuilder extends Builder
     }
 
     /**
-     * @param null|Callable $callback
-     * 
+     * @param null|Closure $callback
+     *
      * @return BaseQueryBuilder
      */
     protected function getDuplicatesQuery($callback = null)
@@ -750,8 +750,8 @@ class QueryBuilder extends Builder
     }
 
     /**
-     * @param null|Callable $callback
-     * 
+     * @param null|Closure $callback
+     *
      * @return BaseQueryBuilder
      */
     protected function getWrongParentQuery($callback = null)
@@ -794,8 +794,8 @@ class QueryBuilder extends Builder
     }
 
     /**
-     * @param null|Callable $callback
-     * 
+     * @param null|Closure $callback
+     *
      * @return $this
      */
     protected function getMissingParentQuery($callback = null)
@@ -804,7 +804,7 @@ class QueryBuilder extends Builder
             ->newNestedSetQuery()
             ->when($callback, $callback)
             ->toBase()
-            ->whereNested(function (BaseQueryBuilder $inner) {
+            ->whereNested(function (BaseQueryBuilder $inner) use($callback) {
                 $grammar = $this->query->getGrammar();
 
                 $table = $this->wrappedTable();
@@ -815,6 +815,7 @@ class QueryBuilder extends Builder
 
                 $existsCheck = $this->model
                     ->newNestedSetQuery()
+                    ->when($callback, $callback)
                     ->toBase()
                     ->selectRaw('1')
                     ->from($this->query->raw("{$table} as {$wrappedAlias}"))
@@ -831,25 +832,29 @@ class QueryBuilder extends Builder
     /**
      * Get the number of total errors of the tree.
      *
+     * @param null|Closure $callback
+     *
      * @since 2.0
      *
      * @return int
      */
-    public function getTotalErrors()
+    public function getTotalErrors($callback = null)
     {
-        return array_sum($this->countErrors());
+        return array_sum($this->countErrors($callback));
     }
 
     /**
      * Get whether the tree is broken.
      *
+     * @param null|Closure $callback
+     *
      * @since 2.0
      *
      * @return bool
      */
-    public function isBroken()
+    public function isBroken($callback = null)
     {
-        return $this->getTotalErrors() > 0;
+        return $this->getTotalErrors($callback) > 0;
     }
 
     /**
@@ -858,7 +863,7 @@ class QueryBuilder extends Builder
      * Nodes with invalid parent are saved as roots.
      *
      * @param null|NodeTrait|Model $root
-     * @param null|Callable $callback
+     * @param null|Closure $callback
      *
      * @return int The number of changed nodes
      */
@@ -873,10 +878,10 @@ class QueryBuilder extends Builder
 
         $dictionary = $this->model
             ->newNestedSetQuery()
+            ->when($callback, $callback)
             ->when($root, function (self $query) use ($root) {
                 return $query->whereDescendantOf($root);
             })
-            ->when($callback, $callback)
             ->defaultOrder()
             ->get($columns)
             ->groupBy($this->model->getParentIdName())
@@ -887,7 +892,7 @@ class QueryBuilder extends Builder
 
     /**
      * @param NodeTrait|Model $root
-     * @param null|Callable $callback
+     * @param null|Closure $callback
      *
      * @return int
      */
